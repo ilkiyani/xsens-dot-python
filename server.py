@@ -19,7 +19,10 @@ import csv
 from io import StringIO
 import sys
 from notifications import XsensNotificationDelegate
-
+import getopt
+import time
+from random import random as rand
+from pylsl import StreamInfo, StreamOutlet, local_clock
 '''Handles and enable messages for Xsens DOTs' Bluetooth characteristics'''
 CONTROL_CHARACTERISTIC = 32
 SHORT_PAYLOAD_CHARACTERISTIC = 43
