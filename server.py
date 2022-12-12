@@ -16,7 +16,8 @@ NOTES:
 
 from bluepy import btle
 import csv
-
+from io import StringIO
+import sys
 from notifications import XsensNotificationDelegate
 
 '''Handles and enable messages for Xsens DOTs' Bluetooth characteristics'''
@@ -63,11 +64,45 @@ for periph in peripherals:
     periph.setDelegate(delegate)
 
 i = 1
+srate = 60
+name = 'Dot'
+type = 'XSENS'
+n_channels= 4
+info = StreamInfo(name, type, n_channels, srate, 'float32', 'myuid34234')
+
+# next make an outlet
+outlet = StreamOutlet(info)
+start_time = local_clock()
+sent_samples = 0
 while True:
+    buffer=StringIO()
+    sys.stdout=buffer
     for periph in peripherals:
         if periph.waitForNotifications(1.0):
             pass
         else:
             print("No notification/data from sensor {} was received".format(periph.addr))
+    formatted_data=buffer.getvalue()
+    sys.stdout = sys.__stdout__
+    elapsed_time = local_clock() - start_time
+    required_samples = int(srate * elapsed_time) - sent_samples
+    for sample_ix in range(required_samples):
+            index=0
+            mysample=[]
+            for x in range(n_channels):
+                sample=str("")
+                while formatted_data[index]!=",":
+                    sample+=formatted_data[index]
+                    if index==len(formatted_data)-1:
+                        break
+                    index+=1
+                sample=float(sample)
+                mysample.append(sample)
+                if index!=len(formatted_data)-1:
+                    index+=1
+# now send it
+            outlet.push_sample(mysample)
+    sent_samples += required_samples
+    time.sleep(0.01)
     i += 1
 
